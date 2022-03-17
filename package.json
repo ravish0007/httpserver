@@ -1,0 +1,15 @@
+{
+  "name": "http-server",
+  "version": "0.0.1",
+  "description": "mocking http",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mime-types": "^2.1.35"
+  }
+}
