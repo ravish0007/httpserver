@@ -1,5 +1,6 @@
 const net = require('net')
-const fs = require('fs')
+// const fs = require('fs')
+const fs = require('fs').promises
 const path = require('path')
 
 const mime = require('mime-types')
@@ -20,12 +21,12 @@ function parseRequestBuffer (buffer) {
   const request = {}
 
   const [requestAndHeaders, body] = buffer.toString().split('\r\n\r\n')
-  const [methodLine, ...headerArray] = requestAndHeaders.split('\r\n')
+  const [methodLine, ...headers] = requestAndHeaders.split('\r\n')
   const [method, URI, protocol] = methodLine.split(' ')
 
   request.method = method
-  request.uri = URI
-  request.headers = parseHeaderArray(headerArray)
+  request.uri = URI // TODO: parse params
+  request.headers = parseHeaderArray(headers)
   request.body = body || undefined
 
   return request
@@ -58,10 +59,6 @@ const socketWriter = (socket) => {
     responseTemplate = responseTemplate.replace('{{content}}', response.content)
 
     socket.write(responseTemplate)
-    // socket.end()
-
-    console.log(response)
-    console.log(responseTemplate)
   }
 }
 
@@ -71,6 +68,7 @@ function populateResponse () {
   response.Date = new Date().toUTCString()
   response.status = null
   response.headers = {}
+  response.end = false
 
   return response
 }
@@ -80,20 +78,18 @@ async function serveStatic (request, response, directory = 'public', lookup = 'i
     request.uri === '/' ? lookup : request.uri
   )
 
-  fs.readFile(file, (err, data) => {
-    if (err) {
-      console.log(err)
-      response.status = 404
-      return
-    }
-
+  try {
+    const data = await fs.readFile(file)
     response.status = 200
     response.headers['Content-Type'] = mime.lookup(path.extname(file))
     response.headers['Content-Length'] = data.length
+    response.headers.Connection = 'close'
     response.content = data
-
-    response.send(response)
-  })
+  } catch (error) {
+    console.log(error)
+    response.status = 404
+    response.end = true
+  }
 }
 
 async function handleRequest (buffer, send) {
@@ -101,12 +97,8 @@ async function handleRequest (buffer, send) {
   const response = populateResponse()
 
   response.send = send
-
-  try {
-    serveStatic(request, response, options.staticDir)
-  } catch {
-
-  }
+  await serveStatic(request, response, options.staticDir)
+  send(response)
 }
 
 function HttpServer (options) {
