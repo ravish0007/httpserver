@@ -1,0 +1,65 @@
+.actionbar {
+  position: fixed;
+  display: flex;
+  justify-content: space-between;
+  bottom: 1rem;
+  padding: 0.7rem;
+  width: 100%;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-grey);
+}
+
+.actionbar__main {
+  margin-left: auto;
+}
+
+.actionbar__show-toggle {
+  width: 450px;
+  padding: 0.5rem;
+  border: 2px solid var(--color-grey);
+  border-radius: 3px;
+  background-color: var(--color-white);
+  color: var(--color-near-black);
+  font-size: 1em;
+  font-weight: 501;
+}
+
+.actionbar__show-toggle:hover {
+  border-color: var(--color-median-orange);
+  color: var(--color-black);
+}
+
+.actionbar__clear-done {
+  padding: 0.5rem;
+  border: 2px solid var(--color-grey);
+  border-radius: 3px;
+  background-color: var(--color-white);
+  color: var(--color-near-black);
+  font-size: 1em;
+  font-weight: 501;
+}
+
+.actionbar__clear-done:hover {
+  border-color: var(--color-median-orange);
+  color: var(--color-black);
+}
+
+.actionbar__clear-all {
+  padding: 0.5rem;
+  margin-left: auto;
+  border: 2px solid var(--color-grey);
+  border-radius: 3px;
+  background-color: var(--color-white);
+  color: var(--color-near-black);
+  font-size: 1em;
+  font-weight: 501;
+}
+
+.actionbar__clear-all:hover {
+  border-color: var(--color-median-orange);
+  color: var(--color-black);
+}
+
+.actionbar--hide {
+  display: none;
+}

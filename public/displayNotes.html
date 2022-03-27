@@ -1,0 +1,49 @@
+<style>
+  li {
+    margin-bottom: 10px;
+  }
+
+  .name {
+    color: blueviolet;
+  }
+
+  .note {
+    color: green;
+  }
+
+  input {
+    background-color: white;
+    border: 2px solid red;
+    border-radius: 3px;
+    padding: 5px;
+  }
+</style>
+
+
+<ul id="notes">
+</ul>
+
+<form action="/addNote.html">
+  <input type="submit" value="Add Note" />
+</form>
+
+<script>
+
+  fetch('/notes')
+    .then(response => response.json())
+    .then(data => {
+
+      const notes = document.getElementById('notes')
+
+      console.log(data)
+      data['notes'].forEach(({name, note}) => {
+
+        console.log('here')
+        notes.innerHTML += '<li>'
+          + `<span class="name">${name}</span>: `
+          + `<span class="note">${note}</span>`
+          + '</li>'
+      })
+    });
+
+</script>

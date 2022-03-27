@@ -1,0 +1,44 @@
+<style>
+  body {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    height: 100%;
+
+    background: url('/images/background.png')
+  }
+
+  fieldset {
+    padding: 50px;
+    background-color: white;
+    margin: 10px;
+  }
+
+  input,
+  textarea {
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  button {
+    background-color: white;
+    border: 2px solid grey;
+    border-radius: 3px;
+    padding: 5px;
+  }
+</style>
+
+
+<fieldset>
+  <legend>Add Note</legend>
+
+  <form action="/notes" method="post" enctype="multipart/form-data">
+    <label for="name">Name</label>
+    <input type="text" name="name">
+
+    <label for="note">Note</label>
+    <textarea name="note"></textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+</fieldset>
