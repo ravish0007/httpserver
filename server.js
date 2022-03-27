@@ -1,117 +1,70 @@
-const net = require('net')
-// const fs = require('fs')
-const fs = require('fs').promises
-const path = require('path')
+import net from 'net'
 
-const mime = require('mime-types')
+import requestParser, { resetRequest } from './request.js'
+import sendResponse, { newResponse } from './response.js'
+import routeHandler from './route-handler.js'
 
-const STATUS_CODES = require('./statusCodes')
+import { sendStatus } from './utils.js'
 
-function handleError (error) {
-  console.log(error)
-}
+import bodyParser from './middlewares/body-parser.js'
+import cookieParser from './middlewares/cookie-parser.js'
+import staticFiles from './middlewares/static-files.js'
 
-function handleSocket (socket) {
-  socket.on('error', (error) => handleError(error))
-  const send = socketWriter(socket)
-  socket.on('data', (requestBuffer) => handleRequest(requestBuffer, send))
-}
+const finalHandler = (request, response) => sendStatus(response, 404)
 
-function parseRequestBuffer (buffer) {
-  const request = {}
+async function processRequest (request) {
+  const response = newResponse()
 
-  const [requestAndHeaders, body] = buffer.toString().split('\r\n\r\n')
-  const [methodLine, ...headers] = requestAndHeaders.split('\r\n')
-  const [method, URI, protocol] = methodLine.split(' ')
+  bodyParser(request, response)
+  cookieParser(request, response)
 
-  request.method = method
-  request.uri = URI // TODO: parse params
-  request.headers = parseHeaderArray(headers)
-  request.body = body || undefined
+  for (const handler of [staticFiles, routeHandler, finalHandler]) {
+    await handler(request, response)
 
-  return request
-}
-
-function parseHeaderArray (headerArray) {
-  const SEP = ': '
-  const headers = {}
-
-  for (const header of headerArray) {
-    const [headerKey, headerValue] = header.split(SEP)
-    headers[headerKey] = headerValue
+    if (response.isReady) {
+      sendResponse(request, response)
+      break
+    }
   }
-  return headers
+
+  resetRequest(request)
 }
 
-const socketWriter = (socket) => {
-  return function send (response) {
-    let responseTemplate = 'HTTP/1.1 {{status}} {{message}}\r\n' +
-                   '{{headers}}\r\n\r\n' + '{{content}}'
+async function readRequest (chunk, request) {
+  request.buffer = Buffer.concat([request.buffer, chunk])
 
-    const headers = Object.keys(response.headers)
-      .map((header) => `${header}: ${response.headers[header]}`)
-      .join('\r\n')
-
-    responseTemplate = responseTemplate.replace('{{status}}', response.status)
-    responseTemplate = responseTemplate.replace('{{message}}', STATUS_CODES[response.status])
-
-    responseTemplate = responseTemplate.replace('{{headers}}', headers)
-    responseTemplate = responseTemplate.replace('{{content}}', response.content)
-
-    socket.write(responseTemplate)
+  if (!request.headers) {
+    requestParser(request)
   }
-}
-
-function populateResponse () {
-  const response = {}
-
-  response.Date = new Date().toUTCString()
-  response.status = null
-  response.headers = {}
-  response.end = false
-
-  return response
-}
-
-async function serveStatic (request, response, directory = 'public', lookup = 'index.html') {
-  const file = path.join(directory,
-    request.uri === '/' ? lookup : request.uri
-  )
 
   try {
-    const data = await fs.readFile(file)
-    response.status = 200
-    response.headers['Content-Type'] = mime.lookup(path.extname(file))
-    response.headers['Content-Length'] = data.length
-    response.headers.Connection = 'close'
-    response.content = data
+    if (request.method === 'POST') {
+      const headerLength = request.buffer.indexOf('\r\n\r\n') + 4
+      const bodyLength = request.buffer.length - headerLength
+
+      if (bodyLength !== request.headers['Content-Length']) {
+        return
+      }
+    }
+    await processRequest(request)
   } catch (error) {
     console.log(error)
-    response.status = 404
-    response.end = true
   }
-}
-
-async function handleRequest (buffer, send) {
-  const request = parseRequestBuffer(buffer)
-  const response = populateResponse()
-
-  response.send = send
-  await serveStatic(request, response, options.staticDir)
-  send(response)
 }
 
 function HttpServer (options) {
-  const server = net.createServer()
-  server.on('connection', handleSocket)
+  const server = net.createServer((socket) => {
+    const request = {
+      socket: socket,
+      buffer: Buffer.alloc(0)
+    }
+
+    socket.on('data', (chunk) => readRequest(chunk, request))
+    socket.on('error', (error) => console.log(error))
+  })
 
   console.log('listening on', options.port)
   server.listen(options.port)
 }
 
-const options = {
-  port: 8080,
-  staticDir: 'public'
-}
-
-HttpServer(options)
+export default HttpServer
