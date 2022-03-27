@@ -1,7 +1,9 @@
-module.exports = {
+export default {
   200: 'OK', // RFC 7231 6.3.1
   201: 'Created', // RFC 7231 6.3.2
   202: 'Accepted', // RFC 7231 6.3.3
+
+  302: 'Redirect',
 
   400: 'Bad Request', // RFC 7231 6.5.1
   401: 'Unauthorized', // RFC 7235 3.1
